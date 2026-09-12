@@ -17,7 +17,9 @@ export async function runBasicAddToCart(page: Page, log: RunLog) {
   await page.waitForLoadState('networkidle').catch(() => undefined);
 
   log.add('Adding product to cart');
-  const addButton = page.getByRole('button', { name: /add to cart/i }).first();
+  const addButton = page
+    .getByRole('button', { name: /add (to )?(cart|bag)/i })
+    .first();
   await expect(addButton).toBeVisible({ timeout: 15000 });
   await addButton.click();
 
