@@ -5,7 +5,7 @@ import { createSession, getSession, dropSession } from './session-manager.js';
 import { snapshotPage } from './snapshot.js';
 import { finishRecording } from './recorder.js';
 import { config } from './config.js';
-import { highlightElement, showRippleAndClear } from './overlay.js';
+import { highlightOnly, moveCursorToElement, showRippleAndClear } from './overlay.js';
 
 const server = new McpServer({
   name: 'demo-recorder',
@@ -84,7 +84,8 @@ server.registerTool(
       const locator = nth !== undefined ? matches.nth(nth) : matches.first();
       await locator.waitFor({ state: 'visible', timeout: 10000 });
       const box = await locator.boundingBox();
-      if (box) await highlightElement(session.page, box);
+      if (box) await highlightOnly(session.page, box);
+      if (box) await moveCursorToElement(session.page, box);
       await locator.click();
       if (box) await showRippleAndClear(session.page, box);
       await session.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
@@ -121,7 +122,8 @@ server.registerTool(
       const locator = nth !== undefined ? matches.nth(nth) : matches.first();
       await locator.waitFor({ state: 'visible', timeout: 10000 });
       const box = await locator.boundingBox();
-      if (box) await highlightElement(session.page, box);
+      if (box) await highlightOnly(session.page, box);
+      if (box) await moveCursorToElement(session.page, box);
       await locator.fill(value);
       if (box) await showRippleAndClear(session.page, box);
       await session.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
@@ -158,7 +160,8 @@ server.registerTool(
       const locator = nth !== undefined ? matches.nth(nth) : matches.first();
       await locator.waitFor({ state: 'visible', timeout: 10000 });
       const box = await locator.boundingBox();
-      if (box) await highlightElement(session.page, box);
+      if (box) await highlightOnly(session.page, box);
+      if (box) await moveCursorToElement(session.page, box);
       await locator.focus();
       return ok({ focused: { role, name, nth }, url: session.page.url() });
     } catch (error) {

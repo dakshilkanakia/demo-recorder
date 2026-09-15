@@ -132,26 +132,42 @@ export async function installOverlay(page: Page) {
 }
 
 /**
- * Moves the fake cursor to the center of the given element's bounding box,
- * draws a highlight box around it, briefly pauses so the highlight is
- * visible on camera, then clears the highlight and shows a click ripple.
+ * Draws a highlight box around the target element (cursor stays where it
+ * was) and pauses, so the viewer sees what's about to be interacted with
+ * before the cursor arrives. Call this first, then `moveCursorToElement`.
+ */
+export async function highlightOnly(page: Page, box: { x: number; y: number; width: number; height: number }) {
+  await page
+    .evaluate(
+      ([bx, by, bw, bh]) => {
+        window.__demoHighlightRect?.(bx, by, bw, bh);
+      },
+      [box.x, box.y, box.width, box.height]
+    )
+    .catch(() => undefined);
+
+  await page.waitForTimeout(1000);
+}
+
+/**
+ * Moves the fake cursor to the center of the given element's bounding box
+ * and pauses briefly so the viewer sees it land before the action fires.
  * Safe to call even if the overlay script failed to install (no-ops).
  */
-export async function highlightElement(page: Page, box: { x: number; y: number; width: number; height: number }) {
+export async function moveCursorToElement(page: Page, box: { x: number; y: number; width: number; height: number }) {
   const centerX = box.x + box.width / 2;
   const centerY = box.y + box.height / 2;
 
   await page
     .evaluate(
-      ([x, y, bx, by, bw, bh]) => {
+      ([x, y]) => {
         window.__demoMoveCursor?.(x, y);
-        window.__demoHighlightRect?.(bx, by, bw, bh);
       },
-      [centerX, centerY, box.x, box.y, box.width, box.height]
+      [centerX, centerY]
     )
     .catch(() => undefined);
 
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(500);
 }
 
 export async function showRippleAndClear(page: Page, box: { x: number; y: number; width: number; height: number }) {

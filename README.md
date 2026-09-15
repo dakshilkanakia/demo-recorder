@@ -64,9 +64,11 @@ For custom slider widgets (e.g. `rc-slider`) that don't support drag: use
 ## Visual Overlay
 
 Every session gets an injected fake cursor, a highlight box, and a click
-ripple, so the recording is watchable: `click`, `fill`, and `focus` move the
-cursor to the target, draw a highlight around it, pause briefly, then act
-(and `click`/`fill` show a ripple afterward). This happens automatically —
+ripple, so the recording is watchable. `click`, `fill`, and `focus` follow
+this sequence: highlight the target first (cursor stays put, 1s pause) so
+the viewer sees what's about to happen, then move the cursor there (0.5s
+pause), then act (`click`/`fill` also show a ripple afterward). This happens
+automatically —
 no tool arguments needed — and survives page navigations.
 
 ## Manual Local Test
