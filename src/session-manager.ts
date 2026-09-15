@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { chromium, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import { config } from './config.js';
 import { RunLog } from './log.js';
+import { installOverlay } from './overlay.js';
 
 export interface Session {
   id: string;
@@ -35,6 +36,9 @@ export async function createSession(url: string): Promise<Session> {
   log.add(`Opening ${url}`);
 
   try {
+    // Registers the overlay to auto-run on this navigation and every future
+    // one on this page (Playwright's addInitScript persists across goto).
+    await installOverlay(page);
     await page.goto(url, { waitUntil: 'domcontentloaded' });
   } catch (error) {
     await browser.close().catch(() => undefined);

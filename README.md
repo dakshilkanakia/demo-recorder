@@ -61,6 +61,14 @@ For custom slider widgets (e.g. `rc-slider`) that don't support drag: use
 `focus` on the slider handle, then `press_key` with `ArrowRight`/`ArrowLeft`
 (repeat with `times`) to move it, then `snapshot` to read back its value.
 
+## Visual Overlay
+
+Every session gets an injected fake cursor, a highlight box, and a click
+ripple, so the recording is watchable: `click`, `fill`, and `focus` move the
+cursor to the target, draw a highlight around it, pause briefly, then act
+(and `click`/`fill` show a ripple afterward). This happens automatically —
+no tool arguments needed — and survives page navigations.
+
 ## Manual Local Test
 
 ```bash
