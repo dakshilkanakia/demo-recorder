@@ -4,3 +4,4 @@ output/
 auth/storageState.json
 playwright-report/
 test-results/
+.DS_Store

@@ -1,25 +1,27 @@
 {
   "name": "demo-recorder",
-  "version": "0.1.0",
-  "description": "Local Playwright demo video recorder for the MERN ecommerce site.",
+  "version": "0.2.0",
+  "description": "MCP server exposing Playwright browser tools so a coding agent can discover a UI flow and record a demo video.",
   "private": true,
   "type": "module",
   "scripts": {
-    "record": "tsx src/cli.ts",
-    "record:add-to-cart": "tsx src/cli.ts --steps steps/add-to-cart.md",
+    "mcp": "tsx src/mcp-server.ts",
     "check": "tsc --noEmit"
   },
   "keywords": [
     "playwright",
     "recording",
-    "ecommerce"
+    "ecommerce",
+    "mcp"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@playwright/test": "^1.56.1",
     "dotenv": "^17.2.3",
-    "tsx": "^4.20.6"
+    "tsx": "^4.20.6",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^22.20.2",
