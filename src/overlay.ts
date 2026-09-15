@@ -18,18 +18,19 @@ const OVERLAY_SCRIPT = `
   style.textContent = \`
     #__demo-cursor {
       position: fixed;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: rgba(255, 60, 60, 0.9);
-      border: 2px solid white;
-      box-shadow: 0 0 6px rgba(0,0,0,0.5);
+      width: 28px;
+      height: 28px;
       pointer-events: none;
       z-index: 2147483647;
-      transform: translate(-50%, -50%);
-      transition: left 0.4s ease, top 0.4s ease;
+      transform: translate(-2px, -2px);
+      transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1), top 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       left: -100px;
       top: -100px;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+    }
+    #__demo-cursor.__demo-cursor-clicking {
+      transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1), top 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.12s ease;
+      transform: translate(-2px, -2px) scale(0.85);
     }
     #__demo-highlight {
       position: fixed;
@@ -61,6 +62,10 @@ const OVERLAY_SCRIPT = `
 
   const cursor = document.createElement('div');
   cursor.id = '__demo-cursor';
+  cursor.innerHTML = '<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">' +
+    '<path d="M5 2 L5 22 L10.5 17.5 L14 25 L17.5 23.3 L14 16 L21 16 Z" ' +
+    'fill="white" stroke="black" stroke-width="1.5" stroke-linejoin="round"/>' +
+    '</svg>';
   document.body.appendChild(cursor);
 
   const highlight = document.createElement('div');
@@ -91,6 +96,9 @@ const OVERLAY_SCRIPT = `
     r.style.top = y + 'px';
     document.body.appendChild(r);
     setTimeout(() => r.remove(), 550);
+
+    cursor.classList.add('__demo-cursor-clicking');
+    setTimeout(() => cursor.classList.remove('__demo-cursor-clicking'), 150);
   };
 
   } // end install()
@@ -143,7 +151,7 @@ export async function highlightElement(page: Page, box: { x: number; y: number; 
     )
     .catch(() => undefined);
 
-  await page.waitForTimeout(350);
+  await page.waitForTimeout(700);
 }
 
 export async function showRippleAndClear(page: Page, box: { x: number; y: number; width: number; height: number }) {
