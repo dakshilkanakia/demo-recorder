@@ -67,25 +67,25 @@ server.registerTool(
   {
     title: 'Click an element by role and accessible name',
     description:
-      'Clicks the first visible element matching the given role (button/link/etc) and name (substring, case-insensitive). Returns a fresh snapshot on failure.',
+      'Clicks the element matching the given role (button/link/etc) and name (substring, case-insensitive). If multiple elements match, pass `nth` (0-based, from snapshot) to pick a specific one — otherwise the first match is used. Returns a fresh snapshot on failure.',
     inputSchema: {
       sessionId: z.string(),
       role: z.string().describe('e.g. "button", "link"'),
-      name: z.string().describe('accessible name or visible text, substring match')
+      name: z.string().describe('accessible name or visible text, substring match'),
+      nth: z.number().int().min(0).optional().describe('0-based index among duplicate matches, from snapshot')
     }
   },
-  async ({ sessionId, role, name }) => {
+  async ({ sessionId, role, name, nth }) => {
     const session = getSession(sessionId);
-    session.log.add(`Click role="${role}" name~="${name}"`);
+    session.log.add(`Click role="${role}" name~="${name}"${nth !== undefined ? ` nth=${nth}` : ''}`);
     try {
-      const locator = session.page
-        .getByRole(role as never, { name: new RegExp(escapeRegExp(name), 'i') })
-        .first();
+      const matches = session.page.getByRole(role as never, { name: new RegExp(escapeRegExp(name), 'i') });
+      const locator = nth !== undefined ? matches.nth(nth) : matches.first();
       await locator.waitFor({ state: 'visible', timeout: 10000 });
       await locator.click();
       await session.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
       const elements = await snapshotPage(session.page);
-      return ok({ clicked: { role, name }, url: session.page.url(), visibleElements: elements });
+      return ok({ clicked: { role, name, nth }, url: session.page.url(), visibleElements: elements });
     } catch (error) {
       session.log.add(`Click failed: ${errMsg(error)}`);
       const elements = await snapshotPage(session.page).catch(() => []);
@@ -100,31 +100,93 @@ server.registerTool(
   'fill',
   {
     title: 'Fill a text field by role and accessible name',
-    description: 'Fills the first visible textbox matching the given name with a value.',
+    description:
+      'Fills the textbox matching the given name with a value. If multiple textboxes match, pass `nth` (0-based, from snapshot) to pick a specific one — otherwise the first match is used.',
     inputSchema: {
       sessionId: z.string(),
       name: z.string().describe('accessible name, placeholder, or label text'),
-      value: z.string()
+      value: z.string(),
+      nth: z.number().int().min(0).optional().describe('0-based index among duplicate matches, from snapshot')
     }
   },
-  async ({ sessionId, name, value }) => {
+  async ({ sessionId, name, value, nth }) => {
     const session = getSession(sessionId);
-    session.log.add(`Fill name~="${name}" with "${value}"`);
+    session.log.add(`Fill name~="${name}" with "${value}"${nth !== undefined ? ` nth=${nth}` : ''}`);
     try {
-      const locator = session.page
-        .getByRole('textbox', { name: new RegExp(escapeRegExp(name), 'i') })
-        .first();
+      const matches = session.page.getByRole('textbox', { name: new RegExp(escapeRegExp(name), 'i') });
+      const locator = nth !== undefined ? matches.nth(nth) : matches.first();
       await locator.waitFor({ state: 'visible', timeout: 10000 });
       await locator.fill(value);
       await session.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
       const elements = await snapshotPage(session.page);
-      return ok({ filled: { name, value }, url: session.page.url(), visibleElements: elements });
+      return ok({ filled: { name, value, nth }, url: session.page.url(), visibleElements: elements });
     } catch (error) {
       session.log.add(`Fill failed: ${errMsg(error)}`);
       const elements = await snapshotPage(session.page).catch(() => []);
       return fail(`Could not fill field name~="${name}": ${errMsg(error)}`, {
         visibleElements: elements
       });
+    }
+  }
+);
+
+server.registerTool(
+  'focus',
+  {
+    title: 'Focus an element without clicking it',
+    description:
+      'Focuses the element matching the given role and name, without clicking (safer than click for things like slider handles, where a click can drag the value). Pass `nth` to disambiguate duplicates. Follow with press_key to operate it (e.g. ArrowRight/ArrowLeft on a slider).',
+    inputSchema: {
+      sessionId: z.string(),
+      role: z.string(),
+      name: z.string(),
+      nth: z.number().int().min(0).optional()
+    }
+  },
+  async ({ sessionId, role, name, nth }) => {
+    const session = getSession(sessionId);
+    session.log.add(`Focus role="${role}" name~="${name}"${nth !== undefined ? ` nth=${nth}` : ''}`);
+    try {
+      const matches = session.page.getByRole(role as never, { name: new RegExp(escapeRegExp(name), 'i') });
+      const locator = nth !== undefined ? matches.nth(nth) : matches.first();
+      await locator.waitFor({ state: 'visible', timeout: 10000 });
+      await locator.focus();
+      return ok({ focused: { role, name, nth }, url: session.page.url() });
+    } catch (error) {
+      session.log.add(`Focus failed: ${errMsg(error)}`);
+      const elements = await snapshotPage(session.page).catch(() => []);
+      return fail(`Could not focus role="${role}" name~="${name}": ${errMsg(error)}`, {
+        visibleElements: elements
+      });
+    }
+  }
+);
+
+server.registerTool(
+  'press_key',
+  {
+    title: 'Press a keyboard key',
+    description:
+      'Presses a key on the currently focused element (e.g. "Enter", "Tab", "ArrowRight", "ArrowLeft", "Escape", "Space"). Use after `click` or `fill` to focus an element first, e.g. to submit a form with Enter or move a slider/rc-slider handle with arrow keys.',
+    inputSchema: {
+      sessionId: z.string(),
+      key: z.string().describe('Playwright key name, e.g. "Enter", "ArrowRight", "Tab", "Escape"'),
+      times: z.number().int().min(1).max(50).default(1).describe('how many times to press the key in a row')
+    }
+  },
+  async ({ sessionId, key, times }) => {
+    const session = getSession(sessionId);
+    session.log.add(`Press "${key}" x${times}`);
+    try {
+      for (let i = 0; i < times; i++) {
+        await session.page.keyboard.press(key);
+      }
+      await session.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => undefined);
+      const elements = await snapshotPage(session.page);
+      return ok({ pressed: key, times, url: session.page.url(), visibleElements: elements });
+    } catch (error) {
+      session.log.add(`Press key failed: ${errMsg(error)}`);
+      return fail(`Could not press key "${key}": ${errMsg(error)}`);
     }
   }
 );
@@ -155,12 +217,17 @@ server.registerTool(
   {
     title: 'Assert text is visible on the page',
     description: 'Checks whether the given text is currently visible. Use this to verify a step worked.',
-    inputSchema: { sessionId: z.string(), text: z.string() }
+    inputSchema: {
+      sessionId: z.string(),
+      text: z.string(),
+      nth: z.number().int().min(0).optional().describe('0-based index if the text appears more than once')
+    }
   },
-  async ({ sessionId, text }) => {
+  async ({ sessionId, text, nth }) => {
     const session = getSession(sessionId);
     try {
-      const locator = session.page.getByText(new RegExp(escapeRegExp(text), 'i')).first();
+      const matches = session.page.getByText(new RegExp(escapeRegExp(text), 'i'));
+      const locator = nth !== undefined ? matches.nth(nth) : matches.first();
       const visible = await locator.isVisible({ timeout: 8000 }).catch(() => false);
       session.log.add(`Assert visible "${text}": ${visible ? 'pass' : 'fail'}`);
       if (!visible) {

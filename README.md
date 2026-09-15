@@ -44,12 +44,22 @@ finish with `finish_session` to save the video.
 | Tool | Purpose |
 |---|---|
 | `start_session` | Launch a recorded browser session at a URL |
-| `snapshot` | List visible interactive elements on the current page |
-| `click` | Click an element by role + accessible name |
-| `fill` | Fill a text field by name |
+| `snapshot` | List visible interactive elements on the current page (links, buttons, inputs, checkboxes, radios, sliders) |
+| `click` | Click an element by role + accessible name; pass `nth` to pick among duplicates |
+| `fill` | Fill a text field by name; pass `nth` to pick among duplicates |
+| `focus` | Focus an element without clicking (safe for slider handles) |
+| `press_key` | Press a keyboard key (Enter, Tab, ArrowLeft/Right, Escape…), e.g. to submit a form or move a slider after `focus` |
 | `goto` | Navigate to a path or URL |
-| `assert_visible` | Verify text is visible (step verification) |
+| `assert_visible` | Verify text is visible (step verification); pass `nth` if it appears more than once |
 | `finish_session` | Save the video + run log, close the browser |
+
+`snapshot` numbers duplicate role+name matches with `nth` (0-based) so you can
+tell `click`/`fill`/`focus`/`assert_visible` exactly which one to use when a
+page has more than one matching element (e.g. two "Contact Us" links).
+
+For custom slider widgets (e.g. `rc-slider`) that don't support drag: use
+`focus` on the slider handle, then `press_key` with `ArrowRight`/`ArrowLeft`
+(repeat with `times`) to move it, then `snapshot` to read back its value.
 
 ## Manual Local Test
 
