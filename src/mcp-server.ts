@@ -5,7 +5,7 @@ import { createSession, getSession, dropSession } from './session-manager.js';
 import { snapshotPage } from './snapshot.js';
 import { finishRecording } from './recorder.js';
 import { config } from './config.js';
-import { highlightOnly, moveCursorToElement, showRippleAndClear } from './overlay.js';
+import { highlightOnly, moveCursorToElement, showRippleAndClear, zoomIn, zoomOut } from './overlay.js';
 
 const server = new McpServer({
   name: 'demo-recorder',
@@ -83,11 +83,14 @@ server.registerTool(
       const matches = session.page.getByRole(role as never, { name: new RegExp(escapeRegExp(name), 'i') });
       const locator = nth !== undefined ? matches.nth(nth) : matches.first();
       await locator.waitFor({ state: 'visible', timeout: 10000 });
-      const box = await locator.boundingBox();
+      let box = await locator.boundingBox();
+      if (box) await zoomIn(session.page, box);
+      if (box) box = await locator.boundingBox(); // re-measure post-zoom
       if (box) await highlightOnly(session.page, box);
       if (box) await moveCursorToElement(session.page, box);
       await locator.click();
       if (box) await showRippleAndClear(session.page, box);
+      await zoomOut(session.page);
       await session.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
       const elements = await snapshotPage(session.page);
       return ok({ clicked: { role, name, nth }, url: session.page.url(), visibleElements: elements });
@@ -121,11 +124,14 @@ server.registerTool(
       const matches = session.page.getByRole('textbox', { name: new RegExp(escapeRegExp(name), 'i') });
       const locator = nth !== undefined ? matches.nth(nth) : matches.first();
       await locator.waitFor({ state: 'visible', timeout: 10000 });
-      const box = await locator.boundingBox();
+      let box = await locator.boundingBox();
+      if (box) await zoomIn(session.page, box);
+      if (box) box = await locator.boundingBox(); // re-measure post-zoom
       if (box) await highlightOnly(session.page, box);
       if (box) await moveCursorToElement(session.page, box);
       await locator.fill(value);
       if (box) await showRippleAndClear(session.page, box);
+      await zoomOut(session.page);
       await session.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
       const elements = await snapshotPage(session.page);
       return ok({ filled: { name, value, nth }, url: session.page.url(), visibleElements: elements });

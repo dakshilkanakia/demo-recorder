@@ -57,8 +57,19 @@ const OVERLAY_SCRIPT = `
       from { width: 10px; height: 10px; opacity: 0.8; }
       to { width: 60px; height: 60px; opacity: 0; }
     }
+    body.__demo-zoomed {
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
   \`;
   document.head.appendChild(style);
+
+  // Cursor/highlight/ripple are attached to <html>, as siblings of <body>,
+  // not inside it — this way a CSS transform (zoom) on <body> doesn't drag
+  // them along, since position:fixed only escapes an ancestor's transform
+  // if that ancestor isn't actually an ancestor.
+  const overlayRoot = document.createElement('div');
+  overlayRoot.id = '__demo-overlay-root';
+  document.documentElement.appendChild(overlayRoot);
 
   const cursor = document.createElement('div');
   cursor.id = '__demo-cursor';
@@ -66,11 +77,11 @@ const OVERLAY_SCRIPT = `
     '<path d="M5 2 L5 22 L10.5 17.5 L14 25 L17.5 23.3 L14 16 L21 16 Z" ' +
     'fill="white" stroke="black" stroke-width="1.5" stroke-linejoin="round"/>' +
     '</svg>';
-  document.body.appendChild(cursor);
+  overlayRoot.appendChild(cursor);
 
   const highlight = document.createElement('div');
   highlight.id = '__demo-highlight';
-  document.body.appendChild(highlight);
+  overlayRoot.appendChild(highlight);
 
   window.__demoMoveCursor = (x, y) => {
     cursor.style.left = x + 'px';
@@ -94,11 +105,21 @@ const OVERLAY_SCRIPT = `
     r.className = '__demo-ripple';
     r.style.left = x + 'px';
     r.style.top = y + 'px';
-    document.body.appendChild(r);
+    overlayRoot.appendChild(r);
     setTimeout(() => r.remove(), 550);
 
     cursor.classList.add('__demo-cursor-clicking');
     setTimeout(() => cursor.classList.remove('__demo-cursor-clicking'), 150);
+  };
+
+  window.__demoZoomTo = (x, y, scale) => {
+    document.body.style.transformOrigin = x + 'px ' + y + 'px';
+    document.body.style.transform = 'scale(' + scale + ')';
+    document.body.classList.add('__demo-zoomed');
+  };
+
+  window.__demoZoomReset = () => {
+    document.body.style.transform = 'scale(1)';
   };
 
   } // end install()
@@ -118,6 +139,8 @@ declare global {
     __demoHighlightRect?: (x: number, y: number, w: number, h: number) => void;
     __demoClearHighlight?: () => void;
     __demoRipple?: (x: number, y: number) => void;
+    __demoZoomTo?: (x: number, y: number, scale: number) => void;
+    __demoZoomReset?: () => void;
   }
 }
 
@@ -183,4 +206,35 @@ export async function showRippleAndClear(page: Page, box: { x: number; y: number
       [centerX, centerY]
     )
     .catch(() => undefined);
+}
+
+/**
+ * Zooms the page in, centered on the given element, and waits for the zoom
+ * transition to settle. Call before moveCursorToElement so the target is
+ * enlarged before the cursor arrives. Pair with zoomOut afterward.
+ */
+export async function zoomIn(
+  page: Page,
+  box: { x: number; y: number; width: number; height: number },
+  scale = 1.25
+) {
+  const centerX = box.x + box.width / 2;
+  const centerY = box.y + box.height / 2;
+
+  await page
+    .evaluate(
+      ([x, y, s]) => {
+        window.__demoZoomTo?.(x, y, s);
+      },
+      [centerX, centerY, scale]
+    )
+    .catch(() => undefined);
+
+  await page.waitForTimeout(400);
+}
+
+/** Zooms the page back out to normal scale and waits for the transition. */
+export async function zoomOut(page: Page) {
+  await page.evaluate(() => window.__demoZoomReset?.()).catch(() => undefined);
+  await page.waitForTimeout(400);
 }
