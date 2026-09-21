@@ -73,10 +73,16 @@ server.registerTool(
       sessionId: z.string(),
       role: z.string().describe('e.g. "button", "link"'),
       name: z.string().describe('accessible name or visible text, substring match'),
-      nth: z.number().int().min(0).optional().describe('0-based index among duplicate matches, from snapshot')
+      nth: z.number().int().min(0).optional().describe('0-based index among duplicate matches, from snapshot'),
+      zoom: z
+        .boolean()
+        .default(false)
+        .describe(
+          'Zoom the page in on this element before clicking, then zoom back out after. Use for a key/important action worth emphasizing in the recording; skip it (default) for routine or rapid-fire clicks, since it adds about 1.5s per click.'
+        )
     }
   },
-  async ({ sessionId, role, name, nth }) => {
+  async ({ sessionId, role, name, nth, zoom }) => {
     const session = getSession(sessionId);
     session.log.add(`Click role="${role}" name~="${name}"${nth !== undefined ? ` nth=${nth}` : ''}`);
     try {
@@ -84,13 +90,13 @@ server.registerTool(
       const locator = nth !== undefined ? matches.nth(nth) : matches.first();
       await locator.waitFor({ state: 'visible', timeout: 10000 });
       let box = await locator.boundingBox();
-      if (box) await zoomIn(session.page, box);
-      if (box) box = await locator.boundingBox(); // re-measure post-zoom
+      if (zoom && box) await zoomIn(session.page, box);
+      if (zoom && box) box = await locator.boundingBox(); // re-measure post-zoom
       if (box) await highlightOnly(session.page, box);
       if (box) await moveCursorToElement(session.page, box);
       await locator.click();
       if (box) await showRippleAndClear(session.page, box);
-      await zoomOut(session.page);
+      if (zoom) await zoomOut(session.page);
       await session.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
       const elements = await snapshotPage(session.page);
       return ok({ clicked: { role, name, nth }, url: session.page.url(), visibleElements: elements });
@@ -114,10 +120,16 @@ server.registerTool(
       sessionId: z.string(),
       name: z.string().describe('accessible name, placeholder, or label text'),
       value: z.string(),
-      nth: z.number().int().min(0).optional().describe('0-based index among duplicate matches, from snapshot')
+      nth: z.number().int().min(0).optional().describe('0-based index among duplicate matches, from snapshot'),
+      zoom: z
+        .boolean()
+        .default(false)
+        .describe(
+          'Zoom the page in on this field before filling, then zoom back out after. Use for a key/important field worth emphasizing in the recording; skip it (default) for routine or rapid-fire fills, since it adds about 1.5s per call.'
+        )
     }
   },
-  async ({ sessionId, name, value, nth }) => {
+  async ({ sessionId, name, value, nth, zoom }) => {
     const session = getSession(sessionId);
     session.log.add(`Fill name~="${name}" with "${value}"${nth !== undefined ? ` nth=${nth}` : ''}`);
     try {
@@ -125,13 +137,13 @@ server.registerTool(
       const locator = nth !== undefined ? matches.nth(nth) : matches.first();
       await locator.waitFor({ state: 'visible', timeout: 10000 });
       let box = await locator.boundingBox();
-      if (box) await zoomIn(session.page, box);
-      if (box) box = await locator.boundingBox(); // re-measure post-zoom
+      if (zoom && box) await zoomIn(session.page, box);
+      if (zoom && box) box = await locator.boundingBox(); // re-measure post-zoom
       if (box) await highlightOnly(session.page, box);
       if (box) await moveCursorToElement(session.page, box);
       await locator.fill(value);
       if (box) await showRippleAndClear(session.page, box);
-      await zoomOut(session.page);
+      if (zoom) await zoomOut(session.page);
       await session.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => undefined);
       const elements = await snapshotPage(session.page);
       return ok({ filled: { name, value, nth }, url: session.page.url(), visibleElements: elements });

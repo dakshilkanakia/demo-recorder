@@ -68,8 +68,12 @@ ripple, so the recording is watchable. `click`, `fill`, and `focus` follow
 this sequence: highlight the target first (cursor stays put, 1s pause) so
 the viewer sees what's about to happen, then move the cursor there (0.5s
 pause), then act (`click`/`fill` also show a ripple afterward). This happens
-automatically —
-no tool arguments needed — and survives page navigations.
+automatically — no tool arguments needed — and survives page navigations.
+
+`click` and `fill` also accept an optional `zoom: true` argument to scale
+the page in on the target before acting and back out after (off by default).
+Use it for a key/important action worth emphasizing; skip it for routine or
+rapid-fire steps, since it adds about 1.5s per call.
 
 ## Manual Local Test
 
