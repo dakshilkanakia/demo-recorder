@@ -22,16 +22,15 @@ verify the cart"* — with no scripted steps, produced this:
 
 ![Demo preview](docs/preview.gif)
 
-That's a 14-second excerpt of the full 56-second recording — the slider
-filter, two add-to-cart actions, a removal, and a final on-screen
-verification, start to finish.
+The full 56-second recording, start to finish — the slider filter, two
+add-to-cart actions, a removal, and a final on-screen verification —
+with no scripted steps behind any of it.
 
-To watch the whole thing: open
+For a sharper, non-GIF version of the same recording: open
 [`docs/demo-rating-filter-checkout.mp4`](docs/demo-rating-filter-checkout.mp4)
 **on GitHub's website** (not through a markdown link click, which only
 downloads it) — navigating to the file's own page there loads a real
-video player with the complete recording. Or after cloning, just open the
-file directly:
+video player. Or after cloning, just open the file directly:
 
 ```bash
 open docs/demo-rating-filter-checkout.mp4   # macOS
