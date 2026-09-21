@@ -12,6 +12,5 @@ export const config = {
   headless: process.env.HEADLESS === 'true',
   outputDir: path.join(rootDir, 'output'),
   videoDir: path.join(rootDir, 'output', 'videos'),
-  logDir: path.join(rootDir, 'output', 'logs'),
-  defaultStepsFile: path.join(rootDir, 'steps', 'add-to-cart.md')
+  logDir: path.join(rootDir, 'output', 'logs')
 };
